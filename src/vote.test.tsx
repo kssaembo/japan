@@ -1,0 +1,12 @@
+// @vitest-environment jsdom
+import {beforeEach,afterEach,it,expect,vi} from 'vitest';
+import {render,screen,fireEvent,waitFor,cleanup} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
+import App from './App';
+const mocks=vi.hoisted(()=>({join:vi.fn(),vote:vi.fn(),heartbeat:vi.fn()}));
+vi.mock('./backend',async original=>({...await original<object>(),join:mocks.join,vote:mocks.vote,heartbeat:mocks.heartbeat}));
+vi.mock('./audio',()=>({audio:{stop:vi.fn(),media:{},onStatus:()=>{}},stageAudio:()=>null}));
+beforeEach(()=>{localStorage.clear();mocks.join.mockResolvedValue({round:1,choice:null,vote_status:'open'});mocks.heartbeat.mockResolvedValue({round:1,choice:null,vote_status:'open'});mocks.vote.mockReset();});afterEach(cleanup);
+it('waits for server confirmation and prevents double click submissions',async()=>{let resolve!:(v:unknown)=>void;mocks.vote.mockImplementation(()=>new Promise(r=>resolve=r));render(<MemoryRouter initialEntries={['/vote/ABC123']}><App/></MemoryRouter>);await waitFor(()=>expect(screen.getByRole('button',{name:/수업 준비/}).hasAttribute('disabled')).toBe(false));fireEvent.click(screen.getByRole('button',{name:/수업 준비/}));const button=screen.getByRole('button',{name:'투표하기'});fireEvent.click(button);fireEvent.click(button);expect(mocks.vote).toHaveBeenCalledTimes(1);expect(screen.queryByText('투표 완료!')).toBeNull();resolve({accepted:true,duplicate:false,choice:0,round:1});await screen.findByText('투표 완료!');});
+it('keeps the retry request ID and never reports a failed vote as success',async()=>{mocks.vote.mockRejectedValueOnce(Error('network')).mockResolvedValueOnce({accepted:true,choice:0,round:1});render(<MemoryRouter initialEntries={['/vote/ABC123']}><App/></MemoryRouter>);await waitFor(()=>expect(screen.getByRole('button',{name:/수업 준비/}).hasAttribute('disabled')).toBe(false));fireEvent.click(screen.getByRole('button',{name:/수업 준비/}));fireEvent.click(screen.getByRole('button',{name:'투표하기'}));await screen.findByRole('alert');expect(screen.queryByText('투표 완료!')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'투표하기'}));await screen.findByText('투표 완료!');expect(mocks.vote.mock.calls[0][4]).toBe(mocks.vote.mock.calls[1][4]);});
+it('restores a previously stored vote from the server',async()=>{mocks.join.mockResolvedValue({round:1,choice:3,vote_status:'closed'});render(<MemoryRouter initialEntries={['/vote/ABC123']}><App/></MemoryRouter>);await screen.findByText('투표 완료!');expect(mocks.vote).not.toHaveBeenCalled();});

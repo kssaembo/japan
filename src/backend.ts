@@ -1,0 +1,22 @@
+import {createClient} from '@supabase/supabase-js';
+import {control,makeDemo,type EventState,type Cue} from './model';
+const url=import.meta.env.VITE_SUPABASE_URL,key=import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const configured=!!url&&!!key&&!url.includes('YOUR_PROJECT');
+export const supabase=configured?createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false},realtime:{params:{eventsPerSecond:5}}}):null;
+const DEMO_KEY='interview:demo:v1';
+export function readDemo():EventState{try{return JSON.parse(localStorage.getItem(DEMO_KEY)||'null')||makeDemo();}catch{return makeDemo();}}
+export function writeDemo(e:EventState){localStorage.setItem(DEMO_KEY,JSON.stringify(e));window.dispatchEvent(new Event('demo-change'));return e;}
+async function demoLock<T>(fn:()=>T):Promise<T>{return navigator.locks?navigator.locks.request('interview-demo',fn):fn();}
+export async function rpc<T>(name:string,args:Record<string,unknown>={}):Promise<T>{if(!supabase)throw Error('CONFIG_REQUIRED');const {data,error}=await supabase.rpc(name,args).abortSignal(AbortSignal.timeout(12000));if(error)throw Error(error.message);return data as T;}
+export async function getEvent(code:string):Promise<EventState>{if(code==='DEMO')return readDemo();const e=await rpc<EventState|null>('interview_snapshot',{p_code:code});if(!e)throw Error('EVENT_NOT_FOUND');return e;}
+export async function changeEvent(e:EventState,action:string,data:Record<string,unknown>={}){if(e.mode==='demo')return demoLock(()=>{const current=readDemo();if(e.control_version!==current.control_version)throw Error('STATE_CHANGED');return writeDemo(control(current,action,data));});return rpc<EventState>('interview_control',{p_code:e.code,p_version:e.control_version,p_action:action,p_data:data});}
+export async function setCue(e:EventState,cue:Cue|null){if(e.mode==='demo')return demoLock(()=>{const s=readDemo();if(s.stage_seq===e.stage_seq&&!s.stopped&&!s.ended)writeDemo({...s,cue,revision:s.revision+1});});await rpc('interview_cue',{p_code:e.code,p_stage_seq:e.stage_seq,p_cue:cue});}
+export async function addDemoVotes(choice:number,n:number){return demoLock(()=>{const e=readDemo();if(e.vote_status!=='open'||e.stopped||e.ended)throw Error('VOTING_CLOSED');e.counts[choice]+=n;e.joined=Math.max(e.joined,e.counts.reduce((a,b)=>a+b,0));e.ready=e.joined;e.revision++;return writeDemo(e);});}
+export async function restartDemo(){return demoLock(()=>{const old=readDemo();return writeDemo({...makeDemo(),revision:old.revision+1,control_version:old.control_version+1,stage_seq:old.stage_seq+1});});}
+export function voterId(){const k='interview:anonymous-voter';let id=localStorage.getItem(k);if(!id){id=crypto.randomUUID();localStorage.setItem(k,id);}return id;}
+export type VoteStatus={round:number;choice:number|null;vote_status:EventState['vote_status'];ended?:boolean};
+export async function join(code:string,id:string){if(code==='DEMO'){const e=readDemo();return {round:e.round,choice:null,vote_status:e.vote_status};}return rpc<VoteStatus>('interview_join',{p_code:code,p_voter:id});}
+export async function heartbeat(code:string,id:string){return rpc<VoteStatus>('interview_heartbeat',{p_code:code,p_voter:id});}
+export async function vote(code:string,id:string,round:number,choice:number,request:string){return rpc<{accepted:boolean;duplicate:boolean;choice:number;round:number}>('interview_vote',{p_code:code,p_voter:id,p_round:round,p_choice:choice,p_request:request});}
+const errors:Record<string,string>={CONFIG_REQUIRED:'서버 연결 설정이 필요합니다. 지금은 데모를 이용할 수 있습니다.',EVENT_NOT_FOUND:'행사를 찾지 못했습니다. 행사 코드를 확인해 주세요.',ADMIN_REQUIRED:'등록된 강사 계정만 운영할 수 있습니다.',EVENT_ENDED:'종료된 행사입니다. 새 행사에 참여해 주세요.',STATE_CHANGED:'다른 조작으로 상태가 바뀌었습니다. 최신 상태를 확인하고 다시 눌러 주세요.',VOTING_CLOSED:'투표가 마감되었거나 아직 시작되지 않았습니다.',ROUND_CHANGED:'새 투표가 시작되었습니다. 화면을 갱신한 뒤 선택해 주세요.',CAPACITY_REACHED:'행사 참여 한도에 도달했습니다. 강사에게 알려 주세요.',TRY_LATER:'접속이 몰리고 있습니다. 잠시 후 다시 시도해 주세요.',RESET_REQUIRED:'다시 투표하려면 투표 초기화를 눌러 주세요.',JOIN_REQUIRED:'먼저 행사에 입장해 주세요.',SELECT_WINNER_FIRST:'최종 1위와 결과물을 먼저 확정해 주세요.',CLOSE_FIRST:'먼저 투표를 마감해 주세요.',START_FIRST:'투표 시작 버튼을 눌러 주세요.',INVALID_WINNER:'최다 득표 항목 중 하나를 선택해 주세요.',NOT_OPEN:'현재 진행 중인 투표가 없습니다.'};
+export function explain(error:unknown){const message=error instanceof Error?error.message:String(error);return Object.entries(errors).find(([k])=>message.includes(k))?.[1]||'연결 또는 저장을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.';}
