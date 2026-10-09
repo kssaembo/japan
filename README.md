@@ -1,14 +1,16 @@
 # AI 신입 선생님 채용 면접
 
-오사카 한글학교 특별 채용. React + TypeScript + Vite, Tailwind CSS, Motion, Supabase PostgreSQL/Auth/Realtime로 만든 강사 수동 진행형 투표·교육자료 시연 서비스입니다.
+오사카 한글학교 특별 채용. React + TypeScript + Vite, Tailwind CSS, Motion, Supabase PostgreSQL/Auth/Realtime로 만든 단일 화면에서 진행 가능한 투표·교육자료 시연 서비스입니다.
+
+**이번 행사 사용법:** [단일 화면·음성 테스트](docs/SINGLE_SCREEN.md). 기존 행사 코드를 계속 사용하고 행사 종료 버튼은 표시하지 않습니다.
 
 ## 먼저 알아둘 상태
 
 - 서버 설정 없이 `/host?demo=1`에서 로컬 데모가 작동합니다. 데모 전광판은 `/screen/DEMO`입니다. 두 화면은 같은 브라우저의 탭에서 여세요.
 - 실제 투표는 아래 Supabase 설정과 공개 HTTPS 배포를 완료한 뒤 사용합니다. 제공된 코드만으로 사용자 소유 서버가 자동 생성되지는 않습니다.
 - 교육자료 24종, 프롬프트 24개(업무별 결과물과 일치), 한·일 멘트 24쌍, 음성 대본 66개를 포함합니다.
-- **실제 MP3 파일은 포함하지 않았습니다.** 파일이 없으면 자막으로 진행합니다. `docs/audio/PRODUCTION.md`에 제작·배치 방법이 있습니다.
-- 외부 AI API, 실시간 TTS, WebRTC, PeerJS는 사용하지 않습니다.
+- 이번 운영 경로는 노트북 브라우저의 한국어·일본어 음성 합성을 사용합니다. MP3는 포함하지 않았습니다.
+- 외부 AI API, 외부 TTS API, WebRTC, PeerJS는 사용하지 않습니다. 브라우저 로컬 음성을 우선합니다.
 - 현재 확인 범위와 남은 현장 검증은 `docs/TEST_REPORT.md`를 읽어 주세요. 실제 100명 운영이 이미 검증되었다는 의미가 아닙니다.
 
 ## 1. Windows에서 데모 실행

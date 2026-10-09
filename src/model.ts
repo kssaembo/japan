@@ -15,7 +15,7 @@ export const total=(e:Pick<EventState,'counts'>)=>e.counts.reduce((a,b)=>a+b,0);
 export const leaders=(e:Pick<EventState,'counts'>)=>e.counts.flatMap((n,i)=>n>0&&n===Math.max(...e.counts)?[categories[i].id]:[]);
 export const ranked=(e:Pick<EventState,'counts'>)=>categories.map((c,i)=>({...c,count:e.counts[i],index:i})).sort((a,b)=>b.count-a.count||a.index-b.index);
 export function pickResult(category:Category,used:string[],random=Math.random){const all=[1,2,3,4].map(i=>`${category}_0${i}`);const fresh=all.filter(x=>!used.includes(x));const pool=fresh.length?fresh:all;return pool[Math.min(pool.length-1,Math.floor(random()*pool.length))];}
-export function makeDemo():EventState{return {id:'demo',code:'DEMO',title:'오사카 한글학교 특별 채용',mode:'demo',stage:1,stage_seq:0,control_version:0,revision:0,round:1,vote_status:'idle',counts:[0,0,0,0,0,0],winner:null,result_id:null,remark_id:null,used_results:[],language:'ko',animation_seconds:3,result_page:0,cue:null,stopped:false,ended:false,capacity:300,joined:0,ready:0,created_at:new Date().toISOString()};}
+export function makeDemo():EventState{return {id:'demo',code:'DEMO',title:'오사카 한글학교 특별 채용',mode:'demo',stage:1,stage_seq:0,control_version:0,revision:0,round:1,vote_status:'idle',counts:[0,0,0,0,0,0],winner:null,result_id:null,remark_id:null,used_results:[],language:'both',animation_seconds:3,result_page:0,cue:null,stopped:false,ended:false,capacity:300,joined:0,ready:0,created_at:new Date().toISOString()};}
 export function control(e:EventState,action:string,data:Record<string,unknown>={}):EventState{
  const s=structuredClone(e);
  if(s.ended&&action!=='end')throw Error('EVENT_ENDED');
