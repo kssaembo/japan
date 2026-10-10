@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import {beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
-import {render,screen,fireEvent,waitFor,cleanup} from '@testing-library/react';
+import {render,screen,fireEvent,waitFor,cleanup,act} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import App from './App';
 import {readDemo,restartDemo} from './backend';
 import {results} from './content/results';
-import {ResultView} from './components';
+import {ResultView,Countdown} from './components';
 vi.mock('./audio',()=>({audio:{stop:vi.fn(),play:vi.fn(),activate:vi.fn().mockResolvedValue(undefined),preload:vi.fn().mockResolvedValue(0),media:{volume:.8},onStatus:()=>{}},stageAudio:()=>null}));
 beforeEach(()=>{localStorage.clear();vi.stubGlobal('confirm',()=>true);});afterEach(()=>{cleanup();vi.restoreAllMocks();});
 describe('host demo rendered behavior',()=>{
@@ -24,3 +24,6 @@ describe('host demo rendered behavior',()=>{
  it('renders all result variants without blank sections',()=>{for(const r of results){for(let p=0;p<r.sections.length;p++){const ui=render(<ResultView result={r} page={p}/>);expect(ui.getByText(r.title)).toBeTruthy();expect(ui.getByText(r.sections[p].title)).toBeTruthy();ui.unmount();}}});
  it('plays a quiz and reveals an explanation',()=>{const r=results.find(x=>x.id==='game_01')!;const q=r.game!.questions![0];render(<ResultView result={r}/>);fireEvent.click(screen.getByRole('button',{name:q.options[q.answer]}));expect(screen.getByRole('status').textContent).toContain(q.explanation);});
 });
+
+it('opens the projector in a separate tab and keeps its administrator return link',async()=>{render(<MemoryRouter initialEntries={['/host?demo=1']}><App/></MemoryRouter>);const open=await screen.findByRole('link',{name:/전체 화면에서 진행/});expect(open.getAttribute('target')).toBe('_blank');expect(open.getAttribute('href')).toBe('/screen/DEMO');cleanup();render(<MemoryRouter initialEntries={['/screen/DEMO']}><App/></MemoryRouter>);expect((await screen.findByRole('link',{name:/관리자/})).getAttribute('href')).toBe('/host?demo=1');});
+it('retains one countdown frame through 3, 2, 1 and the winner',()=>{vi.useFakeTimers();const ui=render(<Countdown><h1>당선</h1></Countdown>);const frame=ui.container.querySelector('.reveal-frame');expect(screen.getByText('3')).toBeTruthy();act(()=>vi.advanceTimersByTime(1000));expect(screen.getByText('2')).toBeTruthy();act(()=>vi.advanceTimersByTime(1000));expect(screen.getByText('1')).toBeTruthy();act(()=>vi.advanceTimersByTime(1000));expect(screen.getByText('당선')).toBeTruthy();expect(ui.container.querySelector('.reveal-frame')).toBe(frame);vi.useRealTimers();});

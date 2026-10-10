@@ -6,7 +6,7 @@ import {audioManifest} from './content/audio';
 describe('manual presentation contract',()=>{
  it('completes 10-stage workflow and freezes voting before winner',()=>{let e=makeDemo();e=control(e,'stage',{stage:2});e=control(e,'start');e.counts=[3,0,4,1,1,2];expect(()=>control(e,'stage',{stage:5})).toThrow('CLOSE_FIRST');e=control(e,'close');e=control(e,'select',{winner:'game',result_id:'game_01',remark_id:'game_02'});for(let s=5;s<=10;s++)e=control(e,'stage',{stage:s});expect(e.stage).toBe(10);expect(e.used_results).toEqual(['game_01']);expect(total(e)).toBe(11);});
  it('requires tie resolution and excludes a nonleader',()=>{let e=makeDemo();e=control(e,'start');e.counts=[5,5,0,0,0,0];e=control(e,'close');expect(leaders(e)).toEqual(['lesson','homework']);expect(()=>control(e,'select',{winner:'game',result_id:'game_01',remark_id:'game_01'})).toThrow();});
- it('does not pick previously used result until all four are used',()=>{expect(pickResult('lesson',['lesson_01','lesson_02','lesson_03'],()=>0)).toBe('lesson_04');});
+ it('always selects one stable demonstration per category',()=>{for(const c of categories)expect(pickResult(c.id,[`${c.id}_01`],()=>.9)).toBe(`${c.id}_01`);});
  it('stop closes voting and reset starts a new round preserving used materials',()=>{let e=makeDemo();e.used_results=['lesson_01'];e=control(e,'start');e.counts=[9,0,0,0,0,0];e=control(e,'stop');expect(e.vote_status).toBe('closed');e=control(e,'reset');expect(e.round).toBe(2);expect(total(e)).toBe(0);expect(e.used_results).toEqual(['lesson_01']);});
  it('never opens old closed round without reset',()=>{let e=control(makeDemo(),'start');e=control(e,'close');expect(()=>control(e,'start')).toThrow('RESET_REQUIRED');});
 });
