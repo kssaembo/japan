@@ -148,3 +148,8 @@ npm run audio:check
 - Vercel Rewrites: https://vercel.com/docs/routing/rewrites
 
 2026-10-09 개발 시 확인. 서비스 콘솔과 요금·정책은 변경될 수 있습니다.
+
+
+## 사용자 제작 결과물
+
+제공된 6개 결과물 적용 완료. 표지·PDF 미리보기·HTML 게임/체크표·영상·원본 다운로드는 `docs/SUPPLIED_MATERIALS.md`를 참고하세요. `/materials`에서 바로 확인할 수 있습니다.
