@@ -14,6 +14,8 @@ await user(stranger);await rejects(()=>call('interview_create',['intruder','live
 await user(host);
 let e=await call('interview_create',['DB correctness test','rehearsal']);check(e.mode==='rehearsal','rehearsal mode');
 const c=e.code;const first=randomUUID();await call('interview_join',[c,first],'anon');
+await call('interview_join',[c,first],'anon');
+const lobby=await call('interview_snapshot',[c],'anon');check(lobby.joined===1&&lobby.vote_status==='idle','repeat lobby entry counts once before voting');
 await rejects(()=>call('interview_vote',[c,first,e.round,1,randomUUID()],'anon'),/VOTING_CLOSED/);
 await rejects(()=>call('interview_control',[c,e.control_version,'start',{}],'anon'),/permission denied/);
 await user(stranger);await rejects(()=>call('interview_control',[c,e.control_version,'start',{}]),/ADMIN_REQUIRED/);await user(host);

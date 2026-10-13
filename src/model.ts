@@ -8,7 +8,11 @@ export const categories = [
 ] as const;
 export type Category = typeof categories[number]['id'];
 export type Language = 'ko'|'ja'|'both'|'off';
-export const stages = ['AI 신입 선생님 등장','청중 입장','실시간 투표','투표 마감','1위 발표','프롬프트 공개','AI 요청 시뮬레이션','AI의 한마디','교육자료 공개','제작 비하인드'];
+export const stages = ['AI 선생님 등장 · 참여','청중 입장','실시간 투표','투표 마감','1위 발표','프롬프트 공개','AI 요청 시뮬레이션','AI의 한마디','교육자료 공개','제작 비하인드'];
+// Preserve server stage identifiers; stages 1 and 2 share one visible lobby.
+export const displayedStage=(stage:number)=>stage<=2?1:stage-1;
+export const presentationStages=stages.filter((_,i)=>i!==1);
+
 export type Cue={id:string,language:'ko'|'ja',started_at:number,duration:number,playing:boolean};
 export type EventState={id:string;code:string;title:string;mode:'live'|'rehearsal'|'demo';stage:number;stage_seq:number;control_version:number;revision:number;round:number;vote_status:'idle'|'open'|'closed';counts:number[];winner:Category|null;result_id:string|null;remark_id:string|null;used_results:string[];language:Language;animation_seconds:number;result_page:number;cue:Cue|null;stopped:boolean;ended:boolean;capacity:number;joined:number;ready:number;created_at:string};
 export const total=(e:Pick<EventState,'counts'>)=>e.counts.reduce((a,b)=>a+b,0);

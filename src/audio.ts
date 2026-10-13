@@ -39,4 +39,4 @@ export class AudioEngine {
  }
 }
 export const audio=new AudioEngine();
-export function stageAudio(e:EventState){return e.stage===1?'intro':e.stage===5&&e.winner?`winner_${e.winner}`:e.stage===8?e.remark_id:null;}
+export function stageAudio(e:EventState){return e.stage<=2?'intro':e.stage===5&&e.winner?`winner_${e.winner}`:e.stage===8?e.remark_id:null;}
